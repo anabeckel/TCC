@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerador de PRD para TCC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark;--bg:#eceff3;--panel:#fff;--ink:#17202c;--mute:#5b697a;--line:#d3dae3;--accent:#2447c8;--accent-ink:#fff;--field:#f6f8fa}
+@media (prefers-color-scheme:dark){:root{--bg:#0e131a;--panel:#161d27;--ink:#e5eaf0;--mute:#94a2b4;--line:#2a3443;--accent:#7aa2ff;--accent-ink:#0b1220;--field:#0e131a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+header h1{font:600 17px "IBM Plex Sans",system-ui,sans-serif;margin:0 auto 0 0}
+#st{font-size:13px;color:var(--mute);min-width:110px}
+.btn{font:500 13px "IBM Plex Sans",system-ui,sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--mute)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:24px;max-width:1280px;margin:0 auto;padding:24px 20px 48px}
+.blk{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:14px}
+.blk h2{font-size:16px;font-weight:600;margin:0 0 2px}
+.hint{margin:0 0 10px;font-size:13px;color:var(--mute)}
+label{display:block;font-size:13px;color:var(--mute);margin:0 0 3px}
+input,select,textarea{width:100%;font:inherit;color:inherit;background:var(--field);border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+textarea{resize:vertical}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row{display:grid;gap:6px;margin-bottom:6px}
+.x{border:1px solid var(--line);background:transparent;color:var(--mute);border-radius:6px;cursor:pointer;font-size:18px;line-height:1}
+.x:hover{color:var(--ink);border-color:var(--mute)}
+.add{font:500 13px "IBM Plex Sans",system-ui,sans-serif;color:var(--accent);background:none;border:0;padding:6px 0;cursor:pointer}
+#pv{position:sticky;top:64px;max-height:calc(100vh - 80px);overflow:auto;align-self:start}
+.paper{background:#fff;color:#1b1b1b;font:400 15px/1.65 "Source Serif 4",Georgia,serif;padding:48px 52px;min-height:620px;border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.1),0 14px 34px -14px rgba(0,0,0,.35)}
+.paper h1{font:700 28px/1.2 "Source Serif 4",Georgia,serif;margin:0 0 14px}
+.paper h2{font:600 18px/1.3 "Source Serif 4",Georgia,serif;margin:28px 0 8px;padding-bottom:4px;border-bottom:1px solid #cfcfcf}
+.paper p{margin:0 0 10px}
+.paper ul{margin:0 0 10px;padding-left:22px}
+.paper table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 10px}
+.paper th,.paper td{border:1px solid #cfcfcf;padding:5px 8px;text-align:left;vertical-align:top}
+.paper th{background:#f0f0f0}
+.paper .empty{color:#777;font-style:italic}
+.ai textarea{margin-bottom:8px}.ai .row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.ai .err{color:#d64545;font-size:13px}.ai #ai-keybox{margin-bottom:8px}
+@media (max-width:900px){main{grid-template-columns:1fr}#pv{position:static;max-height:none}.paper{padding:28px 22px}}
+@media print{header,#left{display:none}body{background:#fff}main{display:block;padding:0;max-width:none}#pv{position:static;max-height:none;overflow:visible}.paper{box-shadow:none;padding:0;min-height:0}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Gerador de PRD para TCC</h1>
+  <span id="st" role="status"></span>
+  <button class="btn" id="b-ex" type="button">Preencher exemplo</button>
+  <button class="btn" id="b-clr" type="button">Limpar</button>
+  <button class="btn" id="b-cp" type="button">Copiar Markdown</button>
+  <button class="btn" id="b-dl" type="button">Baixar .md</button>
+  <button class="btn primary" id="b-pr" type="button">Imprimir / salvar PDF</button>
+</header>
+<main>
+  <div id="left">
+    <section class="blk ai">
+      <h2>Gerar com IA</h2>
+      <p class="hint">Descreva sua ideia e a IA preenche o PRD inteiro. Depois você revisa e edita cada campo.</p>
+      <textarea id="ai-ideia" rows="4" aria-label="Ideia do projeto" placeholder="Ex.: Um aplicativo para ajudar estudantes de Ciência da Computação a organizar a rotina de estudos e acompanhar o progresso por disciplina."></textarea>
+      <div id="ai-keybox">
+        <label for="ai-key">Chave de API do Google Gemini</label>
+        <input id="ai-key" type="password" autocomplete="off" placeholder="AIza…">
+        <p class="hint">Fica só neste navegador (apagada ao fechar a aba) e é enviada apenas para o Google. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Crie uma de graça no Google AI Studio</a>.</p>
+      </div>
+      <div class="row2"><button class="btn primary" id="ai-go" type="button">Gerar PRD com IA</button><span class="err" id="ai-err" role="alert"></span></div>
+    </section>
+    <div id="form"></div>
+  </div>
+  <div id="pv"><article class="paper" id="paper"></article></div>
+</main>
+<script>
+const KEY='prd-tcc-v1';
+const META=[['produto','Nome do produto','Ex.: StudyFlow'],['autor','Autor(a)',''],['orientador','Orientador(a)',''],['versao','Versão','1.0']];
+const PRI=['Essencial','Importante','Desejável'];
+const SEC=[
+{id:'visao',t:'Visão geral',type:'text',h:'Em 2 a 4 frases: o que é o produto e para quem ele existe.',ph:'O [produto] é um [tipo de sistema] que ajuda [público] a [resultado principal].'},
+{id:'problema',t:'Problema e justificativa',type:'text',h:'Qual dor existe hoje e por que vale resolvê-la. Ligue com a pergunta de pesquisa do TCC.',ph:'Hoje, [público] enfrenta [problema], o que causa [consequência].'},
+{id:'publico',t:'Público-alvo e personas',type:'list',h:'Quem vai usar. Uma linha por persona, com perfil e contexto de uso.',cols:[{ph:'Ex.: Estudante de graduação, 18 a 25 anos, estuda pelo celular'}],add:'Adicionar persona'},
+{id:'objetivos',t:'Objetivos',type:'list',h:'O que o produto precisa alcançar. Prefira verbos mensuráveis.',cols:[{ph:'Ex.: Permitir criar um plano semanal em menos de 5 minutos'}],add:'Adicionar objetivo'},
+{id:'metricas',t:'Métricas de sucesso',type:'list',h:'Como você vai saber que deu certo (SUS, taxa de conclusão, tempo de tarefa).',cols:[{ph:'Ex.: Nota SUS média acima de 70'}],add:'Adicionar métrica'},
+{id:'rf',t:'Requisitos funcionais',type:'list',h:'O que o sistema faz. Os códigos RF01, RF02… são gerados sozinhos.',cols:[{ph:'O sistema deve permitir…'},{sel:PRI,w:'112px',lbl:'Prioridade'}],add:'Adicionar requisito',table:{head:['ID','Requisito','Prioridade'],id:'RF'}},
+{id:'rnf',t:'Requisitos não funcionais',type:'list',key:1,h:'Como o sistema deve se comportar: desempenho, segurança, usabilidade.',cols:[{sel:['Desempenho','Usabilidade','Segurança','Acessibilidade','Compatibilidade','Outro'],w:'140px',lbl:'Categoria'},{ph:'Ex.: Carregar as telas principais em até 3 segundos'}],add:'Adicionar requisito',table:{head:['ID','Categoria','Requisito'],id:'RNF'}},
+{id:'fora',t:'Fora do escopo',type:'list',h:'O que não será feito nesta versão. Ajuda a defender o escopo do TCC.',cols:[{ph:'Ex.: Aplicativo nativo para Android e iOS'}],add:'Adicionar item'},
+{id:'riscos',t:'Premissas e riscos',type:'list',h:'O que você assume como verdadeiro e o que pode atrapalhar.',cols:[{ph:'Ex.: Risco: poucos voluntários para os testes de usabilidade'}],add:'Adicionar item'},
+{id:'marcos',t:'Cronograma e marcos',type:'list',h:'Etapas e prazos até a entrega.',cols:[{ph:'Etapa'},{ph:'Prazo, ex.: dez/2026',w:'150px'}],add:'Adicionar etapa',table:{head:['Etapa','Prazo']}}
+];
+const blank=s=>s.cols.map(c=>c.sel?c.sel[0]:'');
+const $=id=>document.getElementById(id);
+const form=$('form'),pv=$('paper');
+
+function h(t,a={},...c){const e=document.createElement(t);for(const k in a){if(k==='class')e.className=a[k];else if(k.startsWith('on'))e[k]=a[k];else e.setAttribute(k,a[k])}c.flat().forEach(x=>e.append(x));return e}
+
+function fresh(){const l={};SEC.forEach(s=>{if(s.type==='list')l[s.id]=[blank(s)]});return{meta:{},text:{},list:l}}
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.meta&&r.text&&r.list){SEC.forEach(s=>{if(s.type==='list'&&!(Array.isArray(r.list[s.id])&&r.list[s.id].length))r.list[s.id]=[blank(s)]});return r}}catch(e){}return fresh()}
+let st=load();
+
+let raf;
+function upd(){cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{pv.innerHTML=html(md());try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}})}
+
+function listUI(s){
+  const box=h('div');
+  const draw=()=>{
+    box.replaceChildren();
+    st.list[s.id].forEach((row,i)=>{
+      const r=h('div',{class:'row',style:'grid-template-columns:'+s.cols.map(c=>c.w||(c.sel?'130px':'1fr')).join(' ')+' 34px'});
+      s.cols.forEach((c,j)=>{
+        let el;
+        if(c.sel){el=h('select',{'aria-label':c.lbl||'Opção'},c.sel.map(o=>h('option',{},o)));el.value=row[j]}
+        else el=h('input',{type:'text',placeholder:c.ph,value:row[j],'aria-label':c.ph});
+        el.oninput=el.onchange=e=>{row[j]=e.target.value;upd()};
+        r.append(el);
+      });
+      r.append(h('button',{class:'x',type:'button','aria-label':'Remover item',onclick:()=>{st.list[s.id].splice(i,1);if(!st.list[s.id].length)st.list[s.id].push(blank(s));draw();upd()}},'×'));
+      box.append(r);
+    });
+  };
+  draw();
+  return h('div',{},box,h('button',{class:'add',type:'button',onclick:()=>{st.list[s.id].push(blank(s));draw();upd();const f=box.querySelector('.row:last-child input');if(f)f.focus()}},'+ '+s.add));
+}
+
+function build(){
+  form.replaceChildren();
+  form.append(h('section',{class:'blk'},h('h2',{},'Identificação'),h('p',{class:'hint'},'Salvo automaticamente neste navegador.'),
+    h('div',{class:'g2'},META.map(([k,l,ph])=>h('div',{},h('label',{for:'m-'+k},l),h('input',{id:'m-'+k,type:'text',placeholder:ph,value:st.meta[k]||'',oninput:e=>{st.meta[k]=e.target.value;upd()}}))))));
+  SEC.forEach(s=>{
+    form.append(h('section',{class:'blk'},h('h2',{},s.t),h('p',{class:'hint'},s.h),
+      s.type==='text'?h('textarea',{rows:4,'aria-label':s.t,placeholder:s.ph||'',oninput:e=>{st.text[s.id]=e.target.value;upd()}},st.text[s.id]||''):listUI(s)));
+  });
+}
+
+function md(){
+  const m=st.meta,L=['# PRD: '+((m.produto||'').trim()||'Nome do produto'),''];
+  [['Autor(a)',m.autor],['Orientador(a)',m.orientador],['Versão',m.versao],['Data',new Date().toLocaleDateString('pt-BR')]].forEach(([k,v])=>{if(v&&v.trim())L.push('- **'+k+':** '+v.trim())});
+  L.push('');
+  let n=0;
+  SEC.forEach(s=>{
+    const b=[];
+    if(s.type==='text'){const v=(st.text[s.id]||'').trim();if(v)b.push(v)}
+    else{
+      const rows=st.list[s.id].filter(r=>(r[s.key||0]||'').trim());
+      if(rows.length){
+        if(s.table){
+          const cl=x=>String(x).replace(/\|/g,'/').replace(/\s+/g,' ').trim();
+          const hd=s.table.head;
+          b.push('| '+hd.join(' | ')+' |','|'+hd.map(()=>'---').join('|')+'|');
+          rows.forEach((r,i)=>b.push('| '+(s.table.id?[s.table.id+String(i+1).padStart(2,'0')]:[]).concat(r).map(cl).join(' | ')+' |'));
+        }else rows.forEach(r=>b.push('- '+r[0].trim()));
+      }
+    }
+    if(b.length){n++;L.push('## '+n+'. '+s.t,'',...b,'')}
+  });
+  return L.join('\n').replace(/\n{3,}/g,'\n\n').trim()+'\n';
+}
+
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+function html(src){
+  const ls=src.split('\n');let o='',i=0;
+  while(i<ls.length){
+    const l=ls[i];
+    if(l.startsWith('# ')){o+='<h1>'+inl(l.slice(2))+'</h1>';i++}
+    else if(l.startsWith('## ')){o+='<h2>'+inl(l.slice(3))+'</h2>';i++}
+    else if(l.startsWith('- ')){o+='<ul>';while(i<ls.length&&ls[i].startsWith('- ')){o+='<li>'+inl(ls[i].slice(2))+'</li>';i++}o+='</ul>'}
+    else if(l.startsWith('|')){
+      const rs=[];while(i<ls.length&&ls[i].startsWith('|')){rs.push(ls[i]);i++}
+      const cells=r=>r.slice(1,-1).split('|').map(c=>c.trim());
+      o+='<table><thead><tr>'+cells(rs[0]).map(c=>'<th>'+inl(c)+'</th>').join('')+'</tr></thead><tbody>'+rs.slice(2).map(r=>'<tr>'+cells(r).map(c=>'<td>'+inl(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+    }
+    else if(!l.trim()){i++}
+    else{const p=[];while(i<ls.length&&ls[i].trim()&&!/^(#|- |\|)/.test(ls[i])){p.push(ls[i]);i++}o+='<p>'+inl(p.join(' '))+'</p>'}
+  }
+  if(!/<h2>/.test(o))o+='<p class="empty">Preencha os campos ao lado e as seções do documento aparecem aqui.</p>';
+  return o;
+}
+
+let tm;
+function msg(t){const e=$('st');e.textContent=t;clearTimeout(tm);tm=setTimeout(()=>e.textContent='',2500)}
+async function cp(){
+  try{await navigator.clipboard.writeText(md())}
+  catch(e){const t=h('textarea',{},md());document.body.append(t);t.select();document.execCommand('copy');t.remove()}
+  msg('Markdown copiado.');
+}
+function dl(){
+  const slug=((st.meta.produto||'produto')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'produto';
+  const a=h('a',{href:URL.createObjectURL(new Blob([md()],{type:'text/markdown;charset=utf-8'})),download:'prd-'+slug+'.md'});
+  document.body.append(a);a.click();a.remove();msg('Arquivo baixado.');
+}
+function example(){
+  if(!confirm('Substituir o conteúdo atual pelo exemplo?'))return;
+  st={meta:{produto:'StudyFlow',autor:'Seu nome',orientador:'Prof.ª Nome Sobrenome',versao:'1.0'},
+  text:{visao:'O StudyFlow é um aplicativo web que ajuda estudantes de graduação a planejar a rotina de estudos e acompanhar o progresso semanal em cada disciplina.',
+  problema:'Estudantes costumam organizar o estudo em anotações soltas e planilhas, o que dificulta enxergar atrasos e priorizar conteúdos antes das provas. O TCC investiga se um planejamento guiado melhora a regularidade de estudo.'},
+  list:{publico:[['Estudante de graduação, 18 a 25 anos, que estuda principalmente pelo celular'],['Estudante concluinte que concilia estágio e faculdade']],
+  objetivos:[['Permitir criar um plano semanal de estudos em menos de 5 minutos'],['Mostrar o progresso por disciplina de forma visual']],
+  metricas:[['80% dos testadores concluem o primeiro plano sem ajuda'],['Nota média de usabilidade (SUS) acima de 70']],
+  rf:[['Cadastrar disciplinas e datas de prova','Essencial'],['Criar metas semanais de estudo por disciplina','Essencial'],['Exibir gráfico de progresso semanal','Importante'],['Enviar lembretes por e-mail','Desejável']],
+  rnf:[['Usabilidade','Interface responsiva, utilizável em telas a partir de 360 px'],['Desempenho','Carregar as telas principais em até 3 segundos em conexão 4G']],
+  fora:[['Aplicativo nativo para Android e iOS'],['Integração com calendários externos']],
+  riscos:[['Risco: baixa adesão dos voluntários nos testes de usabilidade'],['Premissa: os participantes têm acesso a um navegador atualizado']],
+  marcos:[['Levantamento de requisitos','nov/2026'],['Protótipo navegável','dez/2026'],['Implementação do MVP','fev/2027'],['Testes com usuários','abr/2027'],['Entrega da monografia','jun/2027']]}};
+  build();upd();
+}
+function clear(){if(!confirm('Apagar todo o conteúdo?'))return;st=fresh();build();upd()}
+
+// ---- IA ----
+// Cole aqui a URL do seu Cloudflare Worker (veja worker.js). Vazio = cada visitante usa a própria chave de API.
+const PROXY_URL='';
+const MODEL='gemini-2.5-flash'; // confira o nome atual em ai.google.dev/gemini-api/docs/models
+const prompt=()=>`Você é um gerente de produto sênior ajudando um aluno a escrever o PRD do TCC. Com base na ideia do usuário, responda SOMENTE com um JSON válido, sem markdown, neste formato: {"produto":"","visao":"","problema":"","publico":[""],"objetivos":[""],"metricas":[""],"rf":[["requisito","Essencial|Importante|Desejável"]],"rnf":[["Desempenho|Usabilidade|Segurança|Acessibilidade|Compatibilidade|Outro","requisito"]],"fora":[""],"riscos":[""],"marcos":[["etapa","prazo no formato mmm/aaaa"]]}. Escreva em português do Brasil, com linguagem objetiva e acadêmica. Gere 2 a 3 personas, 3 a 4 objetivos, 3 métricas mensuráveis, 6 a 10 requisitos funcionais, 3 a 5 não funcionais, 3 itens fora do escopo, 3 riscos ou premissas e 5 marcos de cronograma. Hoje é ${new Date().toLocaleDateString('pt-BR')}.`;
+
+function aplicar(j){
+  const arr=a=>Array.isArray(a)?a:[];
+  const s=x=>typeof x==='string'?x:'';
+  const f=fresh();
+  f.meta=Object.assign({},st.meta);
+  if(s(j.produto).trim())f.meta.produto=j.produto.trim();
+  f.text={visao:s(j.visao),problema:s(j.problema)};
+  const put=(k,l)=>{if(l.length)f.list[k]=l};
+  ['publico','objetivos','metricas','fora','riscos'].forEach(k=>put(k,arr(j[k]).map(s).filter(x=>x.trim()).map(x=>[x])));
+  const cat=SEC.find(x=>x.id==='rnf').cols[0].sel;
+  put('rf',arr(j.rf).filter(r=>Array.isArray(r)&&s(r[0]).trim()).map(r=>[s(r[0]),PRI.includes(r[1])?r[1]:PRI[1]]));
+  put('rnf',arr(j.rnf).filter(r=>Array.isArray(r)&&s(r[1]).trim()).map(r=>[cat.includes(r[0])?r[0]:'Outro',s(r[1])]));
+  put('marcos',arr(j.marcos).filter(r=>Array.isArray(r)&&s(r[0]).trim()).map(r=>[s(r[0]),s(r[1])]));
+  st=f;build();upd();
+}
+
+async function gerar(){
+  const ideia=$('ai-ideia').value.trim(),btn=$('ai-go'),err=$('ai-err');
+  err.textContent='';
+  if(ideia.length<15){err.textContent='Descreva a ideia com pelo menos uma frase.';return}
+  const key=$('ai-key').value.trim();
+  if(!PROXY_URL&&!key){err.textContent='Cole sua chave de API do Gemini para gerar.';return}
+  btn.disabled=true;btn.textContent='Gerando…';
+  try{
+    let txt;
+    if(PROXY_URL){
+      const r=await fetch(PROXY_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({ideia})});
+      if(!r.ok)throw new Error(await r.text()||r.status);
+      txt=(await r.json()).text;
+    }else{
+      const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODEL+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},body:JSON.stringify({systemInstruction:{parts:[{text:prompt()}]},contents:[{role:'user',parts:[{text:ideia}]}],generationConfig:{responseMimeType:'application/json',maxOutputTokens:8192}})});
+      const d=await r.json();
+      if(!r.ok)throw new Error((d.error&&d.error.message)||r.status);
+      txt=((d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts)||[]).map(x=>x.text||'').join('');
+    }
+    aplicar(JSON.parse(txt.replace(/^```(?:json)?|```$/gm,'').trim()));
+    msg('PRD gerado. Revise e ajuste.');
+  }catch(e){err.textContent='Não foi possível gerar: '+e.message}
+  finally{btn.disabled=false;btn.textContent='Gerar PRD com IA'}
+}
+if(PROXY_URL)$('ai-keybox').hidden=true;
+try{$('ai-key').value=sessionStorage.getItem('ak')||''}catch(e){}
+$('ai-key').oninput=e=>{try{sessionStorage.setItem('ak',e.target.value)}catch(_){}};
+$('ai-go').onclick=gerar;
+
+$('b-cp').onclick=cp;$('b-dl').onclick=dl;$('b-pr').onclick=()=>window.print();$('b-ex').onclick=example;$('b-clr').onclick=clear;
+build();upd();
+</script>
+</body>
+</html>
