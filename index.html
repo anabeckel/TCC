@@ -209,8 +209,8 @@ function clear(){if(!confirm('Apagar todo o conteúdo?'))return;st=fresh();build
 
 // ---- IA ----
 // Cole aqui a URL do seu Cloudflare Worker (veja worker.js). Vazio = cada visitante usa a própria chave de API.
-const PROXY_URL='';
-const MODEL='gemini-2.5-flash'; // confira o nome atual em ai.google.dev/gemini-api/docs/models
+const PROXY_URL='https://gerador-prd.analuuq.workers.dev';
+const MODEL='gemini-3.5-flash-lite'; // confira o nome atual em ai.google.dev/gemini-api/docs/models
 const prompt=()=>`Você é um gerente de produto sênior ajudando um aluno a escrever o PRD do TCC. Com base na ideia do usuário, responda SOMENTE com um JSON válido, sem markdown, neste formato: {"produto":"","visao":"","problema":"","publico":[""],"objetivos":[""],"metricas":[""],"rf":[["requisito","Essencial|Importante|Desejável"]],"rnf":[["Desempenho|Usabilidade|Segurança|Acessibilidade|Compatibilidade|Outro","requisito"]],"fora":[""],"riscos":[""],"marcos":[["etapa","prazo no formato mmm/aaaa"]]}. Escreva em português do Brasil, com linguagem objetiva e acadêmica. Gere 2 a 3 personas, 3 a 4 objetivos, 3 métricas mensuráveis, 6 a 10 requisitos funcionais, 3 a 5 não funcionais, 3 itens fora do escopo, 3 riscos ou premissas e 5 marcos de cronograma. Hoje é ${new Date().toLocaleDateString('pt-BR')}.`;
 
 function aplicar(j){
