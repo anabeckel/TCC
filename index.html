@@ -234,8 +234,8 @@ function clear(){if(!confirm('Apagar todo o conteúdo?'))return;st=fresh();build
 
 // ---- IA ----
 // Cole aqui a URL do seu Cloudflare Worker (veja worker.js). Vazio = cada visitante usa a própria chave de API.
-const PROXY_URL='';
-const MODEL='gemini-2.5-flash'; // confira o nome atual em ai.google.dev/gemini-api/docs/models
+const PROXY_URL='https://gerador-prd.analuuq.workers.dev';
+const MODEL='gemini-3.5-flash-lite'; // confira o nome atual em ai.google.dev/gemini-api/docs/models
 const prompt=(nivel,idioma)=>`Você é um gerente de produto sênior. Com base na ideia do usuário, escreva um PRD e responda SOMENTE com um JSON válido, sem markdown, neste formato: {"produto":"","visao":"","problema":"","publico":[""],"objetivos":[""],"metricas":[""],"stories":[["Como [persona], quero [ação] para [benefício]","critério de aceite"]],"rf":[["requisito","Essencial|Importante|Desejável"]],"rnf":[["Desempenho|Usabilidade|Segurança|Acessibilidade|Compatibilidade|Outro","requisito"]],"fora":[""],"dependencias":[""],"riscos":[""],"perguntas":[""],"marcos":[["etapa","prazo"]]}. ${idioma==='en'?'Escreva todos os textos em inglês.':idioma==='pt'?'Escreva todos os textos em português do Brasil.':'Escreva todos os textos no mesmo idioma da ideia do usuário.'} Use linguagem objetiva e profissional. Nos campos rf e rnf, use exatamente os valores de prioridade e categoria listados no formato, mesmo que o texto esteja em outro idioma. ${nivel==='completo'?'Nível COMPLETO: gere 2 a 3 personas, 3 a 4 objetivos, 3 a 4 métricas mensuráveis, 4 a 6 user stories com critérios de aceite verificáveis, 6 a 10 requisitos funcionais, 3 a 5 não funcionais, 3 itens fora do escopo, 3 dependências, 3 riscos ou premissas, 3 a 5 perguntas em aberto e 4 a 5 marcos.':'Nível ENXUTO: gere apenas produto, visao, problema, 2 personas, 3 objetivos, 3 métricas, 5 a 7 requisitos funcionais, 3 itens fora do escopo, 3 riscos ou premissas e 4 marcos; deixe stories, rnf, dependencias e perguntas como listas vazias.'} Hoje é ${new Date().toLocaleDateString('pt-BR')}.`;
 
 function aplicar(j){
