@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gerador de PRD para TCC</title>
+<title>Gerador de PRD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
@@ -41,17 +41,18 @@ textarea{resize:vertical}
 .paper th,.paper td{border:1px solid #cfcfcf;padding:5px 8px;text-align:left;vertical-align:top}
 .paper th{background:#f0f0f0}
 .paper .empty{color:#777;font-style:italic}
-.ai textarea{margin-bottom:8px}.ai .row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.ai .err{color:#d64545;font-size:13px}.ai #ai-keybox{margin-bottom:8px}
+.ai textarea{margin-bottom:8px}.ai .row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.ai .err{color:#d64545;font-size:13px}.ai #ai-keybox{margin-bottom:8px}.ai .g2{margin-bottom:10px}
 @media (max-width:900px){main{grid-template-columns:1fr}#pv{position:static;max-height:none}.paper{padding:28px 22px}}
 @media print{header,#left{display:none}body{background:#fff}main{display:block;padding:0;max-width:none}#pv{position:static;max-height:none;overflow:visible}.paper{box-shadow:none;padding:0;min-height:0}}
 </style>
 </head>
 <body>
 <header>
-  <h1>Gerador de PRD para TCC</h1>
+  <h1>Gerador de PRD</h1>
   <span id="st" role="status"></span>
   <button class="btn" id="b-ex" type="button">Preencher exemplo</button>
   <button class="btn" id="b-clr" type="button">Limpar</button>
+  <button class="btn" id="b-rc" type="button">Copiar formatado</button>
   <button class="btn" id="b-cp" type="button">Copiar Markdown</button>
   <button class="btn" id="b-dl" type="button">Baixar .md</button>
   <button class="btn primary" id="b-pr" type="button">Imprimir / salvar PDF</button>
@@ -60,8 +61,12 @@ textarea{resize:vertical}
   <div id="left">
     <section class="blk ai">
       <h2>Gerar com IA</h2>
-      <p class="hint">Descreva sua ideia e a IA preenche o PRD inteiro. Depois você revisa e edita cada campo.</p>
-      <textarea id="ai-ideia" rows="4" aria-label="Ideia do projeto" placeholder="Ex.: Um aplicativo para ajudar estudantes de Ciência da Computação a organizar a rotina de estudos e acompanhar o progresso por disciplina."></textarea>
+      <p class="hint">Descreva a ideia em português ou inglês e a IA preenche o PRD inteiro. Depois você revisa e edita cada campo.</p>
+      <div class="g2">
+        <div><label for="ai-level">Nível do PRD</label><select id="ai-level"><option value="enxuto">Enxuto (1 a 2 páginas)</option><option value="completo">Completo (stories, dependências)</option></select></div>
+        <div><label for="ai-lang">Idioma do documento</label><select id="ai-lang"><option value="auto">Automático (pelo seu texto)</option><option value="pt">Português</option><option value="en">English</option></select></div>
+      </div>
+      <textarea id="ai-ideia" rows="4" aria-label="Ideia do produto" placeholder="Ex.: Adicionar pagamento via Pix no checkout do nosso marketplace para reduzir o abandono de carrinho no mobile. Meta: +5% de conversão."></textarea>
       <div id="ai-keybox">
         <label for="ai-key">Chave de API do Google Gemini</label>
         <input id="ai-key" type="password" autocomplete="off" placeholder="AIza…">
@@ -74,20 +79,26 @@ textarea{resize:vertical}
   <div id="pv"><article class="paper" id="paper"></article></div>
 </main>
 <script>
-const KEY='prd-tcc-v1';
-const META=[['produto','Nome do produto','Ex.: StudyFlow'],['autor','Autor(a)',''],['orientador','Orientador(a)',''],['versao','Versão','1.0']];
+const KEY='prd-pm-v1';
+const META=[['produto','Produto ou feature','Ex.: Checkout com Pix'],['autor','Autor(a)','Seu nome (PM)'],['time','Time / squad',''],['versao','Versão','1.0']];
 const PRI=['Essencial','Importante','Desejável'];
+const CAT=['Desempenho','Usabilidade','Segurança','Acessibilidade','Compatibilidade','Outro'];
+const EN={Essencial:'Must have',Importante:'Should have','Desejável':'Could have',Desempenho:'Performance',Usabilidade:'Usability','Segurança':'Security',Acessibilidade:'Accessibility',Compatibilidade:'Compatibility',Outro:'Other'};
+const one=(id,t,h,ph,add,full)=>({id,t,type:'list',h,cols:[{ph}],add,full});
 const SEC=[
-{id:'visao',t:'Visão geral',type:'text',h:'Em 2 a 4 frases: o que é o produto e para quem ele existe.',ph:'O [produto] é um [tipo de sistema] que ajuda [público] a [resultado principal].'},
-{id:'problema',t:'Problema e justificativa',type:'text',h:'Qual dor existe hoje e por que vale resolvê-la. Ligue com a pergunta de pesquisa do TCC.',ph:'Hoje, [público] enfrenta [problema], o que causa [consequência].'},
-{id:'publico',t:'Público-alvo e personas',type:'list',h:'Quem vai usar. Uma linha por persona, com perfil e contexto de uso.',cols:[{ph:'Ex.: Estudante de graduação, 18 a 25 anos, estuda pelo celular'}],add:'Adicionar persona'},
-{id:'objetivos',t:'Objetivos',type:'list',h:'O que o produto precisa alcançar. Prefira verbos mensuráveis.',cols:[{ph:'Ex.: Permitir criar um plano semanal em menos de 5 minutos'}],add:'Adicionar objetivo'},
-{id:'metricas',t:'Métricas de sucesso',type:'list',h:'Como você vai saber que deu certo (SUS, taxa de conclusão, tempo de tarefa).',cols:[{ph:'Ex.: Nota SUS média acima de 70'}],add:'Adicionar métrica'},
-{id:'rf',t:'Requisitos funcionais',type:'list',h:'O que o sistema faz. Os códigos RF01, RF02… são gerados sozinhos.',cols:[{ph:'O sistema deve permitir…'},{sel:PRI,w:'112px',lbl:'Prioridade'}],add:'Adicionar requisito',table:{head:['ID','Requisito','Prioridade'],id:'RF'}},
-{id:'rnf',t:'Requisitos não funcionais',type:'list',key:1,h:'Como o sistema deve se comportar: desempenho, segurança, usabilidade.',cols:[{sel:['Desempenho','Usabilidade','Segurança','Acessibilidade','Compatibilidade','Outro'],w:'140px',lbl:'Categoria'},{ph:'Ex.: Carregar as telas principais em até 3 segundos'}],add:'Adicionar requisito',table:{head:['ID','Categoria','Requisito'],id:'RNF'}},
-{id:'fora',t:'Fora do escopo',type:'list',h:'O que não será feito nesta versão. Ajuda a defender o escopo do TCC.',cols:[{ph:'Ex.: Aplicativo nativo para Android e iOS'}],add:'Adicionar item'},
-{id:'riscos',t:'Premissas e riscos',type:'list',h:'O que você assume como verdadeiro e o que pode atrapalhar.',cols:[{ph:'Ex.: Risco: poucos voluntários para os testes de usabilidade'}],add:'Adicionar item'},
-{id:'marcos',t:'Cronograma e marcos',type:'list',h:'Etapas e prazos até a entrega.',cols:[{ph:'Etapa'},{ph:'Prazo, ex.: dez/2026',w:'150px'}],add:'Adicionar etapa',table:{head:['Etapa','Prazo']}}
+{id:'visao',t:['Resumo executivo','Executive summary'],type:'text',h:'Em 2 a 4 frases: o que é, para quem e qual resultado se espera.',ph:'O [produto] permite que [público] [faça algo], para [resultado].'},
+{id:'problema',t:['Problema e contexto','Problem and context'],type:'text',h:'Qual dor existe hoje, evidências e por que vale resolver agora.',ph:'Hoje, [público] enfrenta [problema], o que causa [consequência].'},
+one('publico',['Usuários e personas','Users and personas'],'Quem vai usar. Uma linha por persona, com perfil e contexto de uso.','Ex.: Comprador mobile, 25 a 40 anos, compra recorrente','Adicionar persona'),
+one('objetivos',['Objetivos','Goals'],'O que o produto precisa alcançar. Prefira resultados mensuráveis.','Ex.: Reduzir o abandono de carrinho no pagamento','Adicionar objetivo'),
+one('metricas',['Métricas de sucesso','Success metrics'],'Como saber que deu certo (conversão, retenção, NPS, tempo de tarefa).','Ex.: Conversão do checkout +5% em 90 dias','Adicionar métrica'),
+{id:'stories',t:['User stories','User stories'],type:'list',full:true,h:'Quem quer o quê e por quê, com um critério de aceite verificável. Códigos US01, US02… são automáticos.',cols:[{ph:'Como [persona], quero [ação] para [benefício]'},{ph:'Critério de aceite'}],add:'Adicionar história',table:{head:[['ID','História','Critério de aceite'],['ID','Story','Acceptance criteria']],id:'US'}},
+{id:'rf',t:['Requisitos funcionais','Functional requirements'],type:'list',h:'O que o sistema faz. Códigos RF01, RF02… são automáticos. Prioridade no estilo MoSCoW.',cols:[{ph:'O sistema deve permitir…'},{sel:PRI,w:'112px',lbl:'Prioridade'}],add:'Adicionar requisito',table:{head:[['ID','Requisito','Prioridade'],['ID','Requirement','Priority']],id:'RF'}},
+{id:'rnf',t:['Requisitos não funcionais','Non-functional requirements'],type:'list',full:true,key:1,h:'Como o sistema deve se comportar: desempenho, segurança, usabilidade.',cols:[{sel:CAT,w:'140px',lbl:'Categoria'},{ph:'Ex.: Confirmar o pagamento em até 3 segundos'}],add:'Adicionar requisito',table:{head:[['ID','Categoria','Requisito'],['ID','Category','Requirement']],id:'RNF'}},
+one('fora',['Fora do escopo','Out of scope'],'O que não será feito nesta versão. Ajuda a proteger o escopo.','Ex.: Pix parcelado','Adicionar item'),
+one('dependencias',['Dependências','Dependencies'],'Times, sistemas ou fornecedores de que a entrega depende.','Ex.: API do provedor de pagamento','Adicionar dependência',true),
+one('riscos',['Premissas e riscos','Assumptions and risks'],'O que você assume como verdadeiro e o que pode atrapalhar.','Ex.: Risco: instabilidade do provedor no pico de vendas','Adicionar item'),
+one('perguntas',['Perguntas em aberto','Open questions'],'O que ainda não foi decidido e quem precisa responder.','Ex.: O Pix terá desconto como incentivo?','Adicionar pergunta',true),
+{id:'marcos',t:['Cronograma e marcos','Timeline and milestones'],type:'list',h:'Etapas e prazos até o lançamento.',cols:[{ph:'Etapa'},{ph:'Prazo, ex.: semana 4',w:'150px'}],add:'Adicionar etapa',table:{head:[['Etapa','Prazo'],['Milestone','Target date']]}}
 ];
 const blank=s=>s.cols.map(c=>c.sel?c.sel[0]:'');
 const $=id=>document.getElementById(id);
@@ -95,8 +106,8 @@ const form=$('form'),pv=$('paper');
 
 function h(t,a={},...c){const e=document.createElement(t);for(const k in a){if(k==='class')e.className=a[k];else if(k.startsWith('on'))e[k]=a[k];else e.setAttribute(k,a[k])}c.flat().forEach(x=>e.append(x));return e}
 
-function fresh(){const l={};SEC.forEach(s=>{if(s.type==='list')l[s.id]=[blank(s)]});return{meta:{},text:{},list:l}}
-function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.meta&&r.text&&r.list){SEC.forEach(s=>{if(s.type==='list'&&!(Array.isArray(r.list[s.id])&&r.list[s.id].length))r.list[s.id]=[blank(s)]});return r}}catch(e){}return fresh()}
+function fresh(){const l={};SEC.forEach(s=>{if(s.type==='list')l[s.id]=[blank(s)]});return{meta:{},text:{},list:l,level:'enxuto',langMode:'auto'}}
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&r.meta&&r.text&&r.list){r.level=r.level||'enxuto';r.langMode=r.langMode||'auto';SEC.forEach(s=>{if(s.type==='list'&&!(Array.isArray(r.list[s.id])&&r.list[s.id].length))r.list[s.id]=[blank(s)]});return r}}catch(e){}return fresh()}
 let st=load();
 
 let raf;
@@ -128,31 +139,42 @@ function build(){
   form.append(h('section',{class:'blk'},h('h2',{},'Identificação'),h('p',{class:'hint'},'Salvo automaticamente neste navegador.'),
     h('div',{class:'g2'},META.map(([k,l,ph])=>h('div',{},h('label',{for:'m-'+k},l),h('input',{id:'m-'+k,type:'text',placeholder:ph,value:st.meta[k]||'',oninput:e=>{st.meta[k]=e.target.value;upd()}}))))));
   SEC.forEach(s=>{
-    form.append(h('section',{class:'blk'},h('h2',{},s.t),h('p',{class:'hint'},s.h),
-      s.type==='text'?h('textarea',{rows:4,'aria-label':s.t,placeholder:s.ph||'',oninput:e=>{st.text[s.id]=e.target.value;upd()}},st.text[s.id]||''):listUI(s)));
+    if(s.full&&st.level!=='completo')return;
+    form.append(h('section',{class:'blk'},h('h2',{},s.t[0]),h('p',{class:'hint'},s.h),
+      s.type==='text'?h('textarea',{rows:4,'aria-label':s.t[0],placeholder:s.ph||'',oninput:e=>{st.text[s.id]=e.target.value;upd()}},st.text[s.id]||''):listUI(s)));
   });
+  $('ai-level').value=st.level;$('ai-lang').value=st.langMode;
 }
 
+function detect(){
+  const t=' '+[st.meta.produto,st.text.visao,st.text.problema,$('ai-ideia').value].concat(Object.values(st.list).flat(2)).join(' ').toLowerCase()+' ';
+  const en=(t.match(/\b(the|and|to|of|for|with|that|is|are|users?|should|will|can|we|our|this|from|their|have)\b/g)||[]).length;
+  const pt=(t.match(/\b(de|do|da|dos|das|para|com|que|em|um|uma|não|os|as|por|ser|usuários?|deve|nosso|nossa|são|mais)\b/g)||[]).length;
+  return en>pt?'en':'pt';
+}
+const lang=()=>st.langMode==='auto'?detect():st.langMode;
+
 function md(){
-  const m=st.meta,L=['# PRD: '+((m.produto||'').trim()||'Nome do produto'),''];
-  [['Autor(a)',m.autor],['Orientador(a)',m.orientador],['Versão',m.versao],['Data',new Date().toLocaleDateString('pt-BR')]].forEach(([k,v])=>{if(v&&v.trim())L.push('- **'+k+':** '+v.trim())});
+  const en=lang()==='en',m=st.meta,L=['# PRD: '+((m.produto||'').trim()||(en?'Product name':'Nome do produto')),''];
+  [[en?'Author':'Autor(a)',m.autor],[en?'Team':'Time',m.time],[en?'Version':'Versão',m.versao],[en?'Date':'Data',new Date().toLocaleDateString(en?'en-US':'pt-BR')]].forEach(([k,v])=>{if(v&&v.trim())L.push('- **'+k+':** '+v.trim())});
   L.push('');
   let n=0;
   SEC.forEach(s=>{
+    if(s.full&&st.level!=='completo')return;
     const b=[];
     if(s.type==='text'){const v=(st.text[s.id]||'').trim();if(v)b.push(v)}
     else{
       const rows=st.list[s.id].filter(r=>(r[s.key||0]||'').trim());
       if(rows.length){
         if(s.table){
-          const cl=x=>String(x).replace(/\|/g,'/').replace(/\s+/g,' ').trim();
-          const hd=s.table.head;
+          const cl=x=>String(en&&EN[x]?EN[x]:x).replace(/\|/g,'/').replace(/\s+/g,' ').trim();
+          const hd=s.table.head[en?1:0];
           b.push('| '+hd.join(' | ')+' |','|'+hd.map(()=>'---').join('|')+'|');
           rows.forEach((r,i)=>b.push('| '+(s.table.id?[s.table.id+String(i+1).padStart(2,'0')]:[]).concat(r).map(cl).join(' | ')+' |'));
         }else rows.forEach(r=>b.push('- '+r[0].trim()));
       }
     }
-    if(b.length){n++;L.push('## '+n+'. '+s.t,'',...b,'')}
+    if(b.length){n++;L.push('## '+n+'. '+s.t[en?1:0],'',...b,'')}
   });
   return L.join('\n').replace(/\n{3,}/g,'\n\n').trim()+'\n';
 }
@@ -192,39 +214,42 @@ function dl(){
 }
 function example(){
   if(!confirm('Substituir o conteúdo atual pelo exemplo?'))return;
-  st={meta:{produto:'StudyFlow',autor:'Seu nome',orientador:'Prof.ª Nome Sobrenome',versao:'1.0'},
-  text:{visao:'O StudyFlow é um aplicativo web que ajuda estudantes de graduação a planejar a rotina de estudos e acompanhar o progresso semanal em cada disciplina.',
-  problema:'Estudantes costumam organizar o estudo em anotações soltas e planilhas, o que dificulta enxergar atrasos e priorizar conteúdos antes das provas. O TCC investiga se um planejamento guiado melhora a regularidade de estudo.'},
-  list:{publico:[['Estudante de graduação, 18 a 25 anos, que estuda principalmente pelo celular'],['Estudante concluinte que concilia estágio e faculdade']],
-  objetivos:[['Permitir criar um plano semanal de estudos em menos de 5 minutos'],['Mostrar o progresso por disciplina de forma visual']],
-  metricas:[['80% dos testadores concluem o primeiro plano sem ajuda'],['Nota média de usabilidade (SUS) acima de 70']],
-  rf:[['Cadastrar disciplinas e datas de prova','Essencial'],['Criar metas semanais de estudo por disciplina','Essencial'],['Exibir gráfico de progresso semanal','Importante'],['Enviar lembretes por e-mail','Desejável']],
-  rnf:[['Usabilidade','Interface responsiva, utilizável em telas a partir de 360 px'],['Desempenho','Carregar as telas principais em até 3 segundos em conexão 4G']],
-  fora:[['Aplicativo nativo para Android e iOS'],['Integração com calendários externos']],
-  riscos:[['Risco: baixa adesão dos voluntários nos testes de usabilidade'],['Premissa: os participantes têm acesso a um navegador atualizado']],
-  marcos:[['Levantamento de requisitos','nov/2026'],['Protótipo navegável','dez/2026'],['Implementação do MVP','fev/2027'],['Testes com usuários','abr/2027'],['Entrega da monografia','jun/2027']]}};
+  st={meta:{produto:'Checkout com Pix',autor:'Seu nome',time:'Squad Pagamentos',versao:'1.0'},level:'completo',langMode:'auto',
+  text:{visao:'Adicionar o Pix como forma de pagamento no checkout do marketplace, com confirmação em tempo real, para reduzir o abandono de carrinho no mobile.',
+  problema:'Boa parte dos carrinhos iniciados no mobile é abandonada na etapa de pagamento, e a falta do Pix aparece como um dos principais motivos nas pesquisas com compradores. Isso significa receita perdida e custo de aquisição desperdiçado.'},
+  list:{publico:[['Comprador mobile, 25 a 40 anos, compra recorrente e prefere pagar com Pix'],['Vendedor que acompanha a confirmação do pagamento para despachar o pedido']],
+  objetivos:[['Reduzir o abandono de carrinho na etapa de pagamento'],['Disponibilizar o Pix no app e no site até o fim do trimestre']],
+  metricas:[['Conversão do checkout mobile +5% em 90 dias'],['Mais de 95% dos pagamentos Pix confirmados em até 10 segundos']],
+  stories:[['Como comprador, quero pagar com Pix para finalizar a compra sem digitar dados de cartão','O QR code e o código copia e cola aparecem em até 2 segundos'],['Como vendedor, quero ser notificado quando o Pix for confirmado para despachar o pedido','O status do pedido muda para pago em até 10 segundos após a confirmação']],
+  rf:[['Exibir o Pix como opção de pagamento no checkout','Essencial'],['Gerar QR code e código copia e cola com validade de 30 minutos','Essencial'],['Confirmar o pagamento automaticamente via webhook do provedor','Essencial'],['Permitir reembolso total do Pix pelo painel de suporte','Importante'],['Enviar lembrete antes do QR code expirar','Desejável']],
+  rnf:[['Desempenho','Gerar o QR code em até 2 segundos no percentil 95'],['Segurança','Assinar e validar todos os webhooks do provedor']],
+  fora:[['Pix parcelado'],['Pix por aproximação']],
+  dependencias:[['API de Pix do provedor de pagamento'],['Time de Antifraude, para ajustar as regras de risco']],
+  riscos:[['Risco: instabilidade do provedor no pico de vendas'],['Premissa: o provedor já foi homologado pelo time financeiro']],
+  perguntas:[['Qual a política de reembolso para pedidos parcialmente cancelados?'],['O Pix terá desconto como incentivo?']],
+  marcos:[['Discovery e desenho','semana 1'],['Integração com o provedor','semanas 2 a 4'],['Beta com 10% dos usuários','semana 5'],['Lançamento geral','semana 7']]}};
   build();upd();
 }
 function clear(){if(!confirm('Apagar todo o conteúdo?'))return;st=fresh();build();upd()}
 
 // ---- IA ----
 // Cole aqui a URL do seu Cloudflare Worker (veja worker.js). Vazio = cada visitante usa a própria chave de API.
-const PROXY_URL='https://gerador-prd.analuuq.workers.dev';
-const MODEL='gemini-3.5-flash-lite'; // confira o nome atual em ai.google.dev/gemini-api/docs/models
-const prompt=()=>`Você é um gerente de produto sênior ajudando um aluno a escrever o PRD do TCC. Com base na ideia do usuário, responda SOMENTE com um JSON válido, sem markdown, neste formato: {"produto":"","visao":"","problema":"","publico":[""],"objetivos":[""],"metricas":[""],"rf":[["requisito","Essencial|Importante|Desejável"]],"rnf":[["Desempenho|Usabilidade|Segurança|Acessibilidade|Compatibilidade|Outro","requisito"]],"fora":[""],"riscos":[""],"marcos":[["etapa","prazo no formato mmm/aaaa"]]}. Escreva em português do Brasil, com linguagem objetiva e acadêmica. Gere 2 a 3 personas, 3 a 4 objetivos, 3 métricas mensuráveis, 6 a 10 requisitos funcionais, 3 a 5 não funcionais, 3 itens fora do escopo, 3 riscos ou premissas e 5 marcos de cronograma. Hoje é ${new Date().toLocaleDateString('pt-BR')}.`;
+const PROXY_URL='';
+const MODEL='gemini-2.5-flash'; // confira o nome atual em ai.google.dev/gemini-api/docs/models
+const prompt=(nivel,idioma)=>`Você é um gerente de produto sênior. Com base na ideia do usuário, escreva um PRD e responda SOMENTE com um JSON válido, sem markdown, neste formato: {"produto":"","visao":"","problema":"","publico":[""],"objetivos":[""],"metricas":[""],"stories":[["Como [persona], quero [ação] para [benefício]","critério de aceite"]],"rf":[["requisito","Essencial|Importante|Desejável"]],"rnf":[["Desempenho|Usabilidade|Segurança|Acessibilidade|Compatibilidade|Outro","requisito"]],"fora":[""],"dependencias":[""],"riscos":[""],"perguntas":[""],"marcos":[["etapa","prazo"]]}. ${idioma==='en'?'Escreva todos os textos em inglês.':idioma==='pt'?'Escreva todos os textos em português do Brasil.':'Escreva todos os textos no mesmo idioma da ideia do usuário.'} Use linguagem objetiva e profissional. Nos campos rf e rnf, use exatamente os valores de prioridade e categoria listados no formato, mesmo que o texto esteja em outro idioma. ${nivel==='completo'?'Nível COMPLETO: gere 2 a 3 personas, 3 a 4 objetivos, 3 a 4 métricas mensuráveis, 4 a 6 user stories com critérios de aceite verificáveis, 6 a 10 requisitos funcionais, 3 a 5 não funcionais, 3 itens fora do escopo, 3 dependências, 3 riscos ou premissas, 3 a 5 perguntas em aberto e 4 a 5 marcos.':'Nível ENXUTO: gere apenas produto, visao, problema, 2 personas, 3 objetivos, 3 métricas, 5 a 7 requisitos funcionais, 3 itens fora do escopo, 3 riscos ou premissas e 4 marcos; deixe stories, rnf, dependencias e perguntas como listas vazias.'} Hoje é ${new Date().toLocaleDateString('pt-BR')}.`;
 
 function aplicar(j){
   const arr=a=>Array.isArray(a)?a:[];
   const s=x=>typeof x==='string'?x:'';
   const f=fresh();
-  f.meta=Object.assign({},st.meta);
+  f.meta=Object.assign({},st.meta);f.level=st.level;f.langMode=st.langMode;
   if(s(j.produto).trim())f.meta.produto=j.produto.trim();
   f.text={visao:s(j.visao),problema:s(j.problema)};
   const put=(k,l)=>{if(l.length)f.list[k]=l};
-  ['publico','objetivos','metricas','fora','riscos'].forEach(k=>put(k,arr(j[k]).map(s).filter(x=>x.trim()).map(x=>[x])));
-  const cat=SEC.find(x=>x.id==='rnf').cols[0].sel;
+  ['publico','objetivos','metricas','fora','dependencias','riscos','perguntas'].forEach(k=>put(k,arr(j[k]).map(s).filter(x=>x.trim()).map(x=>[x])));
+  put('stories',arr(j.stories).filter(r=>Array.isArray(r)&&s(r[0]).trim()).map(r=>[s(r[0]),s(r[1])]));
   put('rf',arr(j.rf).filter(r=>Array.isArray(r)&&s(r[0]).trim()).map(r=>[s(r[0]),PRI.includes(r[1])?r[1]:PRI[1]]));
-  put('rnf',arr(j.rnf).filter(r=>Array.isArray(r)&&s(r[1]).trim()).map(r=>[cat.includes(r[0])?r[0]:'Outro',s(r[1])]));
+  put('rnf',arr(j.rnf).filter(r=>Array.isArray(r)&&s(r[1]).trim()).map(r=>[CAT.includes(r[0])?r[0]:'Outro',s(r[1])]));
   put('marcos',arr(j.marcos).filter(r=>Array.isArray(r)&&s(r[0]).trim()).map(r=>[s(r[0]),s(r[1])]));
   st=f;build();upd();
 }
@@ -239,11 +264,11 @@ async function gerar(){
   try{
     let txt;
     if(PROXY_URL){
-      const r=await fetch(PROXY_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({ideia})});
+      const r=await fetch(PROXY_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({ideia,nivel:st.level,idioma:st.langMode})});
       if(!r.ok)throw new Error(await r.text()||r.status);
       txt=(await r.json()).text;
     }else{
-      const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODEL+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},body:JSON.stringify({systemInstruction:{parts:[{text:prompt()}]},contents:[{role:'user',parts:[{text:ideia}]}],generationConfig:{responseMimeType:'application/json',maxOutputTokens:8192}})});
+      const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+MODEL+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':key},body:JSON.stringify({systemInstruction:{parts:[{text:prompt(st.level,st.langMode)}]},contents:[{role:'user',parts:[{text:ideia}]}],generationConfig:{responseMimeType:'application/json',maxOutputTokens:8192}})});
       const d=await r.json();
       if(!r.ok)throw new Error((d.error&&d.error.message)||r.status);
       txt=((d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts)||[]).map(x=>x.text||'').join('');
@@ -253,12 +278,21 @@ async function gerar(){
   }catch(e){err.textContent='Não foi possível gerar: '+e.message}
   finally{btn.disabled=false;btn.textContent='Gerar PRD com IA'}
 }
+
+async function cpRich(){
+  try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([pv.innerHTML],{type:'text/html'}),'text/plain':new Blob([md()],{type:'text/plain'})})])}
+  catch(e){const r=document.createRange();r.selectNodeContents(pv);const g=getSelection();g.removeAllRanges();g.addRange(r);document.execCommand('copy');g.removeAllRanges()}
+  msg('Copiado com formatação.');
+}
+
 if(PROXY_URL)$('ai-keybox').hidden=true;
 try{$('ai-key').value=sessionStorage.getItem('ak')||''}catch(e){}
 $('ai-key').oninput=e=>{try{sessionStorage.setItem('ak',e.target.value)}catch(_){}};
 $('ai-go').onclick=gerar;
+$('ai-level').onchange=e=>{st.level=e.target.value;build();upd()};
+$('ai-lang').onchange=e=>{st.langMode=e.target.value;upd()};
 
-$('b-cp').onclick=cp;$('b-dl').onclick=dl;$('b-pr').onclick=()=>window.print();$('b-ex').onclick=example;$('b-clr').onclick=clear;
+$('b-cp').onclick=cp;$('b-rc').onclick=cpRich;$('b-dl').onclick=dl;$('b-pr').onclick=()=>window.print();$('b-ex').onclick=example;$('b-clr').onclick=clear;
 build();upd();
 </script>
 </body>
